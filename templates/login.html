@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-7">
+        <h2 class="text-center mb-4">Hostel Management Portal</h2>
+        
+        <!-- Action Switcher Buttons -->
+        <div class="btn-group w-100 mb-4 shadow-sm" role="group">
+            <button type="button" class="btn btn-outline-primary active fw-bold" onclick="switchTab('guestLogin')" id="btn-guestLogin">Guest Login</button>
+            <button type="button" class="btn btn-outline-primary fw-bold" onclick="switchTab('guestRegister')" id="btn-guestRegister">Guest Register</button>
+            <button type="button" class="btn btn-outline-dark fw-bold" onclick="switchTab('managerLogin')" id="btn-managerLogin">Manager Login</button>
+            <button type="button" class="btn btn-outline-dark fw-bold" onclick="switchTab('managerRegister')" id="btn-managerRegister">Manager Register</button>
+        </div>
+
+        <!-- Forms Container -->
+        <div class="card shadow border-0">
+            <div class="card-body p-4">
+                
+                <!-- Guest Login Form -->
+                <div id="form-guestLogin" class="auth-form">
+                    <h4 class="mb-3">Guest Login</h4>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="guest_login">
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" required placeholder="guest@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login as Guest</button>
+                    </form>
+                </div>
+
+                <!-- Guest Register Form -->
+                <div id="form-guestRegister" class="auth-form" style="display: none;">
+                    <h4 class="mb-3">Guest Registration</h4>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="guest_register">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="name" class="form-control" required placeholder="John Doe">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" required placeholder="guest@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Register as Guest</button>
+                    </form>
+                </div>
+
+                <!-- Manager Login Form -->
+                <div id="form-managerLogin" class="auth-form" style="display: none;">
+                    <h4 class="mb-3">Manager Login</h4>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="manager_login">
+                        <div class="mb-3">
+                            <label class="form-label">Manager Email</label>
+                            <input type="email" name="email" class="form-control" required placeholder="manager@hostel.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-dark w-100">Login as Manager</button>
+                    </form>
+                    <div class="text-muted text-center mt-3" style="font-size: 0.85rem;">
+                        Default Manager: <code>manager@hostel.com</code> / <code>admin123</code>
+                    </div>
+                </div>
+
+                <!-- Manager Register Form -->
+                <div id="form-managerRegister" class="auth-form" style="display: none;">
+                    <h4 class="mb-3">Manager Registration</h4>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="manager_register">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="name" class="form-control" required placeholder="Jane Manager">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" required placeholder="newmanager@hostel.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 fw-bold">Register as Manager</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(targetId) {
+        // Hide all forms
+        const forms = document.querySelectorAll('.auth-form');
+        forms.forEach(f => f.style.display = 'none');
+
+        // Remove active class from all buttons
+        const buttons = document.querySelectorAll('.btn-group button');
+        buttons.forEach(b => {
+            b.classList.remove('active', 'btn-primary', 'btn-dark');
+            if(b.id.includes('manager')) {
+                b.classList.add('btn-outline-dark');
+            } else {
+                b.classList.add('btn-outline-primary');
+            }
+        });
+
+        // Show target form
+        document.getElementById('form-' + targetId).style.display = 'block';
+
+        // Highlight active button
+        const activeBtn = document.getElementById('btn-' + targetId);
+        activeBtn.classList.add('active');
+        if(targetId.includes('manager')) {
+            activeBtn.classList.remove('btn-outline-dark');
+            activeBtn.classList.add('btn-dark');
+        } else {
+            activeBtn.classList.remove('btn-outline-primary');
+            activeBtn.classList.add('btn-primary');
+        }
+    }
+</script>
+{% endblock %}
