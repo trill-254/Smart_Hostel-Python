@@ -7,6 +7,7 @@ from functools import wraps
 import csv
 from io import StringIO
 import os
+import re
 import threading
 import webbrowser
 import requests
@@ -29,6 +30,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def clean_filename(filename):
+    # Secure the filename first
+    filename = secure_filename(filename)
+    # Strip out any existing numeric timestamp prefix to prevent double-timestamping
+    filename = re.sub(r'^\d+_', '', filename)
+    return filename
+
 
 # --- DATABASE MODELS ---
 class User(db.Model):
@@ -50,7 +58,8 @@ class Room(db.Model):
     bookings = db.relationship('Booking', backref='room', lazy=True)
 
     def available_beds(self):
-        occupied_count = Booking.query.filter_by(room_id=self.id).filter(Booking.status.in_(['Pending Approval', 'Confirmed'])).count()
+        # Only count 'Confirmed' bookings toward capacity so pending requests don't lock beds prematurely
+        occupied_count = Booking.query.filter_by(room_id=self.id).filter(Booking.status == 'Confirmed').count()
         return max(0, self.capacity - occupied_count)
 
 class Booking(db.Model):
@@ -244,7 +253,7 @@ def add_room():
         file = request.files['room_image']
         if file and file.filename != '':
             if allowed_file(file.filename):
-                filename = secure_filename(file.filename)
+                filename = clean_filename(file.filename)
                 unique_filename = f"{int(datetime.utcnow().timestamp())}_{filename}"
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_filename))
                 image_url = f"/static/uploads/{unique_filename}"
@@ -330,9 +339,20 @@ def edit_room(room_id):
         file = request.files['room_image']
         if file and file.filename != '':
             if allowed_file(file.filename):
-                filename = secure_filename(file.filename)
+                filename = clean_filename(file.filename)
                 unique_filename = f"{int(datetime.utcnow().timestamp())}_{filename}"
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_filename))
+                new_image_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                
+                # Delete old image if it exists and isn't default
+                if room.image_url and 'default_room.jpg' not in room.image_url:
+                    old_image_path = os.path.join(app.root_path, room.image_url.lstrip('/'))
+                    if os.path.exists(old_image_path):
+                        try:
+                            os.remove(old_image_path)
+                        except Exception:
+                            pass
+                
+                file.save(new_image_path)
                 room.image_url = f"/static/uploads/{unique_filename}"
             else:
                 flash('Invalid image file type. Room updated without changing image.', 'warning')
@@ -345,6 +365,16 @@ def edit_room(room_id):
 @manager_required
 def delete_room(room_id):
     room = Room.query.get_or_404(room_id)
+    
+    # Delete image file from disk if it exists and isn't default
+    if room.image_url and 'default_room.jpg' not in room.image_url:
+        image_path = os.path.join(app.root_path, room.image_url.lstrip('/'))
+        if os.path.exists(image_path):
+            try:
+                os.remove(image_path)
+            except Exception:
+                pass
+                
     db.session.delete(room)
     db.session.commit()
     flash('Room removed successfully from catalog.', 'info')
@@ -397,6 +427,7 @@ def profile():
         return redirect(url_for('profile'))
         
     return render_template('profile.html', user=user)
+
 # --- RUN APPLICATION ---
 if __name__ == '__main__':
     init_db()
