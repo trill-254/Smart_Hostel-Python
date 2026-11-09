@@ -9,10 +9,11 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#">Urban Stay Hostel</a>
+            <span class="navbar-brand fw-bold" style="opacity: 0; pointer-events: none;">&nbsp;</span>
             {% if session.get('user_id') %}
                 <div class="d-flex align-items-center">
                     <span class="text-light me-3">Hello, {{ session.get('name') }} (<span class="text-uppercase text-warning">{{ session.get('role') }}</span>)</span>
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-light btn-sm me-2">Profile</a>
                     <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
                 </div>
             {% endif %}

@@ -17,6 +17,9 @@ app.config['SECRET_KEY'] = 'hostel-secure-production-key-2026'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hostel.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize Flask-SQLAlchemy
+db = SQLAlchemy(app)
+
 # Local Image Upload Configuration
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -26,13 +29,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# M-Pesa Daraja API Configuration (Sandbox defaults)
-app.config['MPESA_CONSUMER_KEY'] = 'your_consumer_key_here'
-app.config['MPESA_CONSUMER_SECRET'] = 'your_consumer_secret_here'
-app.config['MPESA_SHORTCODE'] = '174379'
-app.config['MPESA_PASSKEY'] = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
-
-db = SQLAlchemy(app)
 
 # --- DATABASE MODELS ---
 class User(db.Model):
@@ -144,7 +140,7 @@ def login():
             if User.query.filter_by(email=email).first():
                 flash('Email address already registered.', 'danger')
             else:
-                hashed_password = generate_password_hash(password, method='scrypt')
+                hashed_password = generate_password_hash(password)
                 new_user = User(name=name, email=email, password_hash=hashed_password, role='guest')
                 db.session.add(new_user)
                 db.session.commit()
@@ -157,7 +153,7 @@ def login():
             if User.query.filter_by(email=email).first():
                 flash('Email address already registered.', 'danger')
             else:
-                hashed_password = generate_password_hash(password, method='scrypt')
+                hashed_password = generate_password_hash(password)
                 new_mgr = User(name=name, email=email, password_hash=hashed_password, role='manager')
                 db.session.add(new_mgr)
                 db.session.commit()
@@ -224,67 +220,6 @@ def book_room():
         flash('Sorry, this room is fully booked.', 'danger')
     return redirect(url_for('guest_dashboard'))
 
-# --- M-PESA PAYMENT HELPER & ROUTE ---
-def generate_mpesa_access_key():
-    consumer_key = app.config.get('MPESA_CONSUMER_KEY')
-    consumer_secret = app.config.get('MPESA_CONSUMER_SECRET')
-    api_URL = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
-    try:
-        r = requests.get(api_URL, auth=(consumer_key, consumer_secret))
-        return r.json().get('access_token')
-    except Exception:
-        return None
-
-@app.route('/pay/mpesa/<int:booking_id>', methods=['POST'])
-@login_required
-def initiate_stk_push(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
-    phone_number = request.form.get('phone_number', '').strip()
-    
-    if phone_number.startswith('0'):
-        phone_number = '254' + phone_number[1:]
-    elif phone_number.startswith('+'):
-        phone_number = phone_number.lstrip('+')
-        
-    if not phone_number.startswith('254') or len(phone_number) != 12:
-        flash('Invalid phone number format. Use 2547XXXXXXXX or 07XXXXXXXX.', 'danger')
-        return redirect(url_for('guest_dashboard'))
-    
-    access_token = generate_mpesa_access_key()
-    if not access_token:
-        flash('Failed to connect to M-Pesa sandbox gateway.', 'danger')
-        return redirect(url_for('guest_dashboard'))
-        
-    api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    password = b64encode((app.config['MPESA_SHORTCODE'] + app.config['MPESA_PASSKEY'] + timestamp).encode()).decode('utf-8')
-    
-    headers = {"Authorization": f"Bearer {access_token}"}
-    payload = {
-        "BusinessShortCode": app.config['MPESA_SHORTCODE'],
-        "Password": password,
-        "Timestamp": timestamp,
-        "TransactionType": "CustomerPayBillOnline",
-        "Amount": int(booking.room.price_per_semester),
-        "PartyA": phone_number,
-        "PartyB": app.config['MPESA_SHORTCODE'],
-        "PhoneNumber": phone_number,
-        "CallBackURL": "https://sandbox.safaricom.co.ke/net",
-        "AccountReference": f"Hostel-{booking.id}",
-        "TransactionDesc": f"Payment for Room {booking.room.room_number}"
-    }
-    
-    try:
-        response = requests.post(api_url, json=payload, headers=headers)
-        data = response.json()
-        if data.get('ResponseCode') == '0':
-            flash('STK Push sent! Please check your phone to enter your M-Pesa PIN.', 'success')
-        else:
-            flash(f"M-Pesa error: {data.get('errorMessage', 'Failed to initiate payment.')}", 'danger')
-    except Exception as e:
-        flash(f"Connection error: {e}", 'danger')
-        
-    return redirect(url_for('guest_dashboard'))
 
 # --- MANAGER DASHBOARD ---
 @app.route('/dashboard/manager')
@@ -380,6 +315,7 @@ def delete_booking(booking_id):
     db.session.commit()
     flash('Booking record deleted successfully.', 'info')
     return redirect(url_for('manager_dashboard'))
+
 @app.route('/manager/room/<int:room_id>/edit', methods=['POST'])
 @manager_required
 def edit_room(room_id):
@@ -390,7 +326,6 @@ def edit_room(room_id):
     room.price_per_semester = float(request.form.get('price_per_semester', room.price_per_semester))
     room.capacity = int(request.form.get('capacity', room.capacity))
     
-    # Handle optional replacement image upload
     if 'room_image' in request.files:
         file = request.files['room_image']
         if file and file.filename != '':
@@ -431,6 +366,37 @@ def export_csv_report():
     output.seek(0)
     return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=hostel_report.csv"})
 
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+        
+    user = User.query.get_or_404(session['user_id'])
+    
+    if request.method == 'POST':
+        user.name = request.form.get('name', user.name)
+        new_email = request.form.get('email')
+        
+        # Check if email is taken by another user
+        existing_user = User.query.filter_by(email=new_email).first()
+        if existing_user and existing_user.id != user.id:
+            flash('Email address is already in use by another account.', 'danger')
+        else:
+            user.email = new_email
+            
+            # Optional password update
+            new_password = request.form.get('password')
+            if new_password:
+                user.password_hash = generate_password_hash(new_password)
+                
+            db.session.commit()
+            session['name'] = user.name # Update session name if changed
+            flash('Profile updated successfully!', 'success')
+            
+        return redirect(url_for('profile'))
+        
+    return render_template('profile.html', user=user)
 # --- RUN APPLICATION ---
 if __name__ == '__main__':
     init_db()

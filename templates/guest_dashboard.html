@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <!-- Right Column: My Bookings & M-Pesa Payments -->
+    <!-- Right Column: My Bookings & Payments -->
     <div class="col-lg-5">
         <h3>My Bookings</h3>
         <div class="card shadow-sm border-0">
@@ -95,20 +95,7 @@
                                 {% elif b.status == 'Rejected' %}bg-danger
                                 {% else %}bg-secondary{% endif %} mt-2">
                                 {{ b.status }}
-                            </span>
-
-                            {% if b.status == 'Confirmed' and b.payment_status != 'Paid' %}
-                            <form action="{{ url_for('initiate_stk_push', booking_id=b.id) }}" method="POST" class="mt-3">
-                                <div class="input-group input-group-sm">
-                                    <input type="text" name="phone_number" class="form-control" placeholder="2547XXXXXXXX" required>
-                                    <button class="btn btn-success" type="submit">Pay with M-Pesa</button>
-                                </div>
-                            </form>
-                            {% elif b.payment_status == 'Paid' %}
-                            <div class="mt-2">
-                                <span class="badge bg-success">Paid via M-Pesa</span>
-                            </div>
-                            {% endif %}
+                            </span>                       
                         </li>
                         {% endfor %}
                     </ul>
