@@ -21,8 +21,8 @@
                         </div>
                         <div>
                             {% if room.available_beds() > 0 %}
-                                <button type="button" 
-                                        class="btn btn-outline-primary btn-sm w-100 fw-bold" 
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm w-100 fw-bold"
                                         onclick="selectRoom('{{ room.id }}', '{{ room.room_number }}', '{{ room.room_type }}')">
                                     Book Now
                                 </button>
@@ -76,13 +76,19 @@
                         <li class="list-group-item p-3">
                             <h6 class="mb-1">Room {{ b.room.room_number }} ({{ b.room.room_type }})</h6>
                             <small class="text-muted">Stay: {{ b.check_in }} to {{ b.check_out }}</small><br>
-                            <span class="badge 
+                            <span class="badge
                                 {% if b.status == 'Confirmed' %}bg-success
                                 {% elif b.status == 'Pending Approval' %}bg-warning text-dark
                                 {% elif b.status == 'Rejected' %}bg-danger
                                 {% else %}bg-secondary{% endif %} mt-2">
                                 {{ b.status }}
-                            </span>                       
+                            </span>
+                            <!-- Payment Status Badge -->
+                            <span class="badge
+                                {% if b.payment_status == 'Paid' %}bg-success
+                                {% else %}bg-danger{% endif %} ms-1">
+                                Payment: {{ b.payment_status }}
+                            </span>
                         </li>
                         {% endfor %}
                     </ul>

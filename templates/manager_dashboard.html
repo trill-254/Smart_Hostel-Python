@@ -137,13 +137,23 @@
                             <div>
                                 <h6 class="mb-0">Guest: {{ b.guest.name }} ({{ b.guest.email }})</h6>
                                 <small class="text-muted">Room {{ b.room.room_number }} ({{ b.room.room_type }}) | {{ b.check_in }} to {{ b.check_out }}</small><br>
-                                <span class="badge 
-                                    {% if b.status == 'Confirmed' %}bg-success
-                                    {% elif b.status == 'Pending Approval' %}bg-warning text-dark
-                                    {% elif b.status == 'Rejected' %}bg-danger
-                                    {% else %}bg-secondary{% endif %} mt-1">
-                                    {{ b.status }}
-                            </span>
+                                <div class="mt-1">
+                                    <!-- Booking Status Badge -->
+                                    <span class="badge
+                                        {% if b.status == 'Confirmed' %}bg-success
+                                        {% elif b.status == 'Pending Approval' %}bg-warning text-dark
+                                        {% elif b.status == 'Rejected' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}">
+                                        Booking: {{ b.status }}
+                                    </span>
+
+                                    <!-- Payment Status Badge -->
+                                    <span class="badge
+                                        {% if b.payment_status == 'Paid' %}bg-success
+                                        {% else %}bg-danger{% endif %} ms-1">
+                                        Payment: {{ b.payment_status }}
+                                    </span>
+                                </div>
                             </div>
                             <div class="d-flex align-items-center">
                                 {% if b.status == 'Pending Approval' %}
@@ -153,15 +163,15 @@
                                     <form action="/manager/booking/{{ b.id }}/reject" method="POST" class="me-1">
                                          <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
                                     </form>
-                                    {% elif b.status == 'Confirmed' %}
+                                {% elif b.status == 'Confirmed' %}
                                     <form action="/manager/booking/{{ b.id }}/checkout" method="POST" class="me-1">
                                         <button type="submit" class="btn btn-sm btn-outline-secondary">Check Out</button>
                                     </form>
-                                    {% endif %}
-                                    <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editBookingModal{{ b.id }}">Edit</button>
-                                    <form action="{{ url_for('delete_booking', booking_id=b.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this booking record?');">
-                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                    </form>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editBookingModal{{ b.id }}">Edit</button>
+                                <form action="{{ url_for('delete_booking', booking_id=b.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this booking record?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
                             </div>
                         </li>
 
@@ -184,12 +194,19 @@
                                     <input type="date" class="form-control" name="check_out" value="{{ b.check_out }}" required>
                                   </div>
                                   <div class="mb-3">
-                                    <label class="form-label">Status</label>
+                                    <label class="form-label">Booking Status</label>
                                     <select class="form-select" name="status">
                                       <option value="Pending Approval" {% if b.status == 'Pending Approval' %}selected{% endif %}>Pending Approval</option>
                                       <option value="Confirmed" {% if b.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
                                       <option value="Rejected" {% if b.status == 'Rejected' %}selected{% endif %}>Rejected</option>
                                       <option value="Completed" {% if b.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                    </select>
+                                  </div>
+                                  <div class="mb-3">
+                                    <label class="form-label">Payment Status</label>
+                                    <select class="form-select" name="payment_status">
+                                      <option value="Unpaid" {% if b.payment_status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+                                      <option value="Paid" {% if b.payment_status == 'Paid' %}selected{% endif %}>Paid</option>
                                     </select>
                                   </div>
                                 </div>
@@ -256,4 +273,4 @@
 </div>
 {% endfor %}
 
-{% endblock %}
+{% endblock %

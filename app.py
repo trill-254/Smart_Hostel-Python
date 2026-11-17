@@ -10,8 +10,6 @@ import os
 import re
 import threading
 import webbrowser
-import requests
-from base64 import b64encode
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hostel-secure-production-key-2026'
@@ -31,9 +29,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def clean_filename(filename):
-    # Secure the filename first
     filename = secure_filename(filename)
-    # Strip out any existing numeric timestamp prefix to prevent double-timestamping
     filename = re.sub(r'^\d+_', '', filename)
     return filename
 
@@ -58,7 +54,6 @@ class Room(db.Model):
     bookings = db.relationship('Booking', backref='room', lazy=True)
 
     def available_beds(self):
-        # Only count 'Confirmed' bookings toward capacity so pending requests don't lock beds prematurely
         occupied_count = Booking.query.filter_by(room_id=self.id).filter(Booking.status == 'Confirmed').count()
         return max(0, self.capacity - occupied_count)
 
@@ -70,7 +65,6 @@ class Booking(db.Model):
     check_out = db.Column(db.String(10), nullable=False)
     status = db.Column(db.String(30), default='Pending Approval')
     payment_status = db.Column(db.String(20), default='Unpaid')
-    mpesa_receipt = db.Column(db.String(50), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Notification(db.Model):
@@ -84,8 +78,6 @@ class Notification(db.Model):
 def init_db():
     with app.app_context():
         db.create_all()
-        
-        # Seed default manager if none exists
         if not User.query.filter_by(role='manager').first():
             mgr = User(
                 name="Head Manager",
@@ -220,7 +212,8 @@ def book_room():
             room_id=room.id,
             check_in=check_in,
             check_out=check_out,
-            status='Pending Approval'
+            status='Pending Approval',
+            payment_status='Unpaid'
         )
         db.session.add(booking)
         db.session.commit()
@@ -279,13 +272,15 @@ def update_booking_status(booking_id, action):
     if action == 'confirm':
         if room.available_beds() > 0:
             booking.status = 'Confirmed'
-            notif = Notification(user_id=booking.user_id, message=f"Your booking for Room {room.room_number} has been confirmed by management.")
+            booking.payment_status = 'Paid'  # Automatically synchronize payment status when approved
+            notif = Notification(user_id=booking.user_id, message=f"Your booking for Room {room.room_number} has been confirmed and marked as paid.")
             db.session.add(notif)
-            flash('Booking confirmed successfully.', 'success')
+            flash('Booking confirmed and payment marked as Paid.', 'success')
         else:
             flash('Cannot confirm: Room is at full capacity.', 'danger')
     elif action == 'reject':
         booking.status = 'Rejected'
+        booking.payment_status = 'Unpaid'
         notif = Notification(user_id=booking.user_id, message=f"Your booking for Room {room.room_number} was rejected.")
         db.session.add(notif)
         flash('Booking rejected.', 'info')
@@ -304,6 +299,7 @@ def edit_booking(booking_id):
     new_check_in = request.form.get('new_check_in') or request.form.get('check_in')
     new_check_out = request.form.get('new_check_out') or request.form.get('check_out')
     new_status = request.form.get('status')
+    new_payment_status = request.form.get('payment_status')
     
     if new_check_in:
         booking.check_in = new_check_in
@@ -311,6 +307,8 @@ def edit_booking(booking_id):
         booking.check_out = new_check_out
     if new_status in ['Pending Approval', 'Confirmed', 'Rejected', 'Completed']:
         booking.status = new_status
+    if new_payment_status in ['Paid', 'Unpaid']:
+        booking.payment_status = new_payment_status
         
     db.session.commit()
     flash('Booking updated successfully.', 'success')
@@ -343,7 +341,6 @@ def edit_room(room_id):
                 unique_filename = f"{int(datetime.utcnow().timestamp())}_{filename}"
                 new_image_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
                 
-                # Delete old image if it exists and isn't default
                 if room.image_url and 'default_room.jpg' not in room.image_url:
                     old_image_path = os.path.join(app.root_path, room.image_url.lstrip('/'))
                     if os.path.exists(old_image_path):
@@ -366,7 +363,6 @@ def edit_room(room_id):
 def delete_room(room_id):
     room = Room.query.get_or_404(room_id)
     
-    # Delete image file from disk if it exists and isn't default
     if room.image_url and 'default_room.jpg' not in room.image_url:
         image_path = os.path.join(app.root_path, room.image_url.lstrip('/'))
         if os.path.exists(image_path):
@@ -386,11 +382,11 @@ def export_csv_report():
     bookings = Booking.query.all()
     output = StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Booking ID', 'Guest Name', 'Guest Email', 'Room Number', 'Room Type', 'Check-In', 'Check-Out', 'Status', 'Date Requested'])
+    writer.writerow(['Booking ID', 'Guest Name', 'Guest Email', 'Room Number', 'Room Type', 'Check-In', 'Check-Out', 'Status', 'Payment Status', 'Date Requested'])
     for b in bookings:
         writer.writerow([
             b.id, b.guest.name, b.guest.email, b.room.room_number,
-            b.room.room_type, b.check_in, b.check_out, b.status,
+            b.room.room_type, b.check_in, b.check_out, b.status, b.payment_status,
             b.created_at.strftime('%Y-%m-%d %H:%M')
         ])
     output.seek(0)
@@ -408,20 +404,17 @@ def profile():
         user.name = request.form.get('name', user.name)
         new_email = request.form.get('email')
         
-        # Check if email is taken by another user
         existing_user = User.query.filter_by(email=new_email).first()
         if existing_user and existing_user.id != user.id:
             flash('Email address is already in use by another account.', 'danger')
         else:
             user.email = new_email
-            
-            # Optional password update
             new_password = request.form.get('password')
             if new_password:
                 user.password_hash = generate_password_hash(new_password)
                 
             db.session.commit()
-            session['name'] = user.name # Update session name if changed
+            session['name'] = user.name
             flash('Profile updated successfully!', 'success')
             
         return redirect(url_for('profile'))
@@ -431,7 +424,6 @@ def profile():
 # --- RUN APPLICATION ---
 if __name__ == '__main__':
     init_db()
-    
     is_local = os.environ.get("PORT") is None
     
     if is_local and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
