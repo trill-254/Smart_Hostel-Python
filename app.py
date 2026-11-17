@@ -229,7 +229,14 @@ def book_room():
 def manager_dashboard():
     rooms = Room.query.all()
     all_bookings = Booking.query.order_by(Booking.created_at.desc()).all()
-    total_revenue = sum([b.room.price_per_semester for b in all_bookings if b.status == 'Confirmed'])
+
+    # Safely calculate revenue only if the booking has a valid room attached
+    total_revenue = sum([
+        b.room.price_per_semester
+        for b in all_bookings
+        if b.status in ['Confirmed', 'Completed'] and b.room is not None
+    ])
+
     return render_template('manager_dashboard.html', rooms=rooms, bookings=all_bookings, revenue=total_revenue)
 
 @app.route('/manager/room/add', methods=['POST'])
