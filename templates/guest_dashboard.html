@@ -1,19 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-{% if notifications %}
-<div class="row mb-4">
-    <div class="col-12">
-        {% for n in notifications %}
-        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
-            <strong>Update:</strong> {{ n.message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
 <div class="row g-4">
     <!-- Left Column: Available Rooms Catalog & Booking Form -->
     <div class="col-lg-7">
@@ -78,10 +65,10 @@
         </div>
     </div>
 
-    <!-- Right Column: My Bookings & Payments -->
+    <!-- Right Column: My Bookings & Notifications -->
     <div class="col-lg-5">
         <h3>My Bookings</h3>
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0 mb-4">
             <div class="card-body p-0">
                 {% if bookings %}
                     <ul class="list-group list-group-flush">
@@ -101,6 +88,23 @@
                     </ul>
                 {% else %}
                     <div class="p-3 text-muted text-center">No bookings made yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notifications Section Under My Bookings -->
+        <h3>Notifications</h3>
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-3">
+                {% if notifications %}
+                    {% for n in notifications %}
+                    <div class="alert alert-info alert-dismissible fade show mb-2" role="alert">
+                        <strong>Update:</strong> {{ n.message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted text-center">No new notifications.</div>
                 {% endif %}
             </div>
         </div>
