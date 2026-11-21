@@ -7,7 +7,7 @@
         <div class="btn-group w-100 mb-4 shadow-sm" role="group">
             <button type="button" class="btn btn-outline-primary active fw-bold" onclick="switchTab('guestLogin')" id="btn-guestLogin">Guest Login</button>
             <button type="button" class="btn btn-outline-primary fw-bold" onclick="switchTab('guestRegister')" id="btn-guestRegister">Guest Register</button>
-            <button type="button" class="btn btn-outline-dark fw-bold" onclick="switchTab('managerLogin')" id="btn-managerLogin">Manager Login</button>
+            <button type="button" class="btn btn-outline-warning fw-bold" onclick="switchTab('managerLogin')" id="btn-managerLogin">Manager Login</button>
             <button type="button" class="btn btn-outline-dark fw-bold" onclick="switchTab('managerRegister')" id="btn-managerRegister">Manager Register</button>
         </div>
 
@@ -87,6 +87,11 @@
                             <label class="form-label">Password</label>
                             <input type="password" name="password" class="form-control" required placeholder="••••••••">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Manager Registration Code</label>
+                            <input type="password" name="registration_code" class="form-control" required placeholder="Enter registration code">
+                            <small class="text-muted">Only authorized managers should have this code.</small>
+                        </div>
                         <button type="submit" class="btn btn-warning w-100 fw-bold">Register as Manager</button>
                     </form>
                 </div>
@@ -128,4 +133,72 @@
         }
     }
 </script>
+
+<!-- Custom CSS for the login and registration page -->
+<style>
+    .row.justify-content-center {
+        max-width: 760px;
+        margin: 2rem auto;
+    }
+
+    .btn-group {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .btn-group .btn {
+        border-radius: 0;
+        padding: 0.75rem 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .card {
+        border-radius: 12px;
+    }
+
+    .card-body {
+        min-height: 380px;
+    }
+
+    .auth-form h4 {
+        text-align: center;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        padding: 0.65rem 0.75rem;
+    }
+
+    .form-control:focus {
+        border-color: #6c757d;
+        box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+    }
+
+    form .btn {
+        border-radius: 8px;
+        padding: 0.65rem;
+    }
+
+    @media (max-width: 576px) {
+        .row.justify-content-center {
+            margin: 1rem auto;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .btn-group .btn {
+            font-size: 0.82rem;
+        }
+
+        .card-body {
+            padding: 1.25rem !important;
+        }
+    }
+</style>
+
 {% endblock %}
