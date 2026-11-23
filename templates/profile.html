@@ -1,39 +1,234 @@
+
 {% extends "base.html" %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow border-0">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="card-title m-0">Edit Profile</h3>
-                    <span class="badge {% if user.role == 'manager' %}bg-danger{% else %}bg-primary{% endif %} text-uppercase px-3 py-2">
-                        {{ user.role }} Account
-                    </span>
-                </div>
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Full Name</label>
-                        <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Email Address</label>
-                        <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">New Password <small class="text-muted fw-normal">(Leave blank to keep current)</small></label>
-                        <input type="password" name="password" class="form-control" placeholder="Enter new password">
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Save Changes</button>
-                </form>
-                <div class="mt-4 text-center">
-                    {% if user.role == 'manager' %}
-                        <a href="{{ url_for('manager_dashboard') }}" class="btn btn-outline-secondary btn-sm">← Back to Manager Dashboard</a>
-                    {% else %}
-                        <a href="{{ url_for('guest_dashboard') }}" class="btn btn-outline-secondary btn-sm">← Back to Guest Dashboard</a>
-                    {% endif %}
-                </div>
+
+<style>
+    .profile-page {
+        width: 100%;
+        max-width: 620px;
+        margin: 45px auto;
+        padding: 0 15px;
+    }
+
+    .profile-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .profile-card-body {
+        padding: 30px;
+    }
+
+    .profile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .profile-title {
+        margin: 0;
+        font-size: 25px;
+        font-weight: 700;
+        color: #212529;
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 8px 14px;
+        border-radius: 20px;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .role-manager {
+        background: #dc3545;
+    }
+
+    .role-guest {
+        background: #0d6efd;
+    }
+
+    .profile-form-group {
+        margin-bottom: 22px;
+    }
+
+    .profile-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        color: #343a40;
+    }
+
+    .profile-label small {
+        color: #6c757d;
+        font-weight: 400;
+    }
+
+    .profile-input {
+        display: block;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #ced4da;
+        border-radius: 7px;
+        background: #ffffff;
+        color: #212529;
+        font-size: 15px;
+        box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .profile-input:focus {
+        outline: none;
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    }
+
+    .save-profile-btn {
+        display: block;
+        width: 100%;
+        padding: 13px;
+        border: none;
+        border-radius: 7px;
+        background: #0d6efd;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .save-profile-btn:hover {
+        background: #0b5ed7;
+    }
+
+    .save-profile-btn i {
+        margin-right: 7px;
+    }
+
+    .profile-back {
+        margin-top: 25px;
+        text-align: center;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 13px;
+        border: 1px solid #6c757d;
+        border-radius: 6px;
+        color: #6c757d;
+        font-size: 13px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .back-link:hover {
+        background: #6c757d;
+        color: #ffffff;
+    }
+
+    @media (max-width: 480px) {
+        .profile-page {
+            margin: 25px auto;
+        }
+
+        .profile-card-body {
+            padding: 22px 18px;
+        }
+
+        .profile-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .profile-title {
+            font-size: 22px;
+        }
+    }
+</style>
+
+<div class="profile-page">
+    <div class="profile-card">
+        <div class="profile-card-body">
+
+            <div class="profile-header">
+                <h3 class="profile-title">Edit Profile</h3>
+
+                <span class="role-badge {% if user.role == 'manager' %}role-manager{% else %}role-guest{% endif %}">
+                    {{ user.role }} Account
+                </span>
             </div>
+
+            <form method="POST">
+
+                <div class="profile-form-group">
+                    <label class="profile-label">Full Name</label>
+                    <input
+                        type="text"
+                        name="name"
+                        class="profile-input"
+                        value="{{ user.name }}"
+                        required
+                    >
+                </div>
+
+                <div class="profile-form-group">
+                    <label class="profile-label">Email Address</label>
+                    <input
+                        type="email"
+                        name="email"
+                        class="profile-input"
+                        value="{{ user.email }}"
+                        required
+                    >
+                </div>
+
+                <div class="profile-form-group">
+                    <label class="profile-label">
+                        New Password
+                        <small>(Leave blank to keep current)</small>
+                    </label>
+
+                    <input
+                        type="password"
+                        name="password"
+                        class="profile-input"
+                        placeholder="Enter new password"
+                    >
+                </div>
+
+                <button type="submit" class="save-profile-btn">
+                    <i class="bi bi-check-circle"></i>
+                    Save Changes
+                </button>
+
+            </form>
+
+            <div class="profile-back">
+                {% if user.role == 'manager' %}
+                    <a href="{{ url_for('manager_dashboard') }}" class="back-link">
+                        <i class="bi bi-arrow-left"></i>
+                        Back to Manager Dashboard
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('guest_dashboard') }}" class="back-link">
+                        <i class="bi bi-arrow-left"></i>
+                        Back to Guest Dashboard
+                    </a>
+                {% endif %}
+            </div>
+
         </div>
     </div>
 </div>
+
 {% endblock %}

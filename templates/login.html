@@ -1,204 +1,375 @@
+
 {% extends "base.html" %}
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-7">
-        
-        <!-- Action Switcher Buttons -->
-        <div class="btn-group w-100 mb-4 shadow-sm" role="group">
-            <button type="button" class="btn btn-outline-primary active fw-bold" onclick="switchTab('guestLogin')" id="btn-guestLogin">Guest Login</button>
-            <button type="button" class="btn btn-outline-primary fw-bold" onclick="switchTab('guestRegister')" id="btn-guestRegister">Guest Register</button>
-            <button type="button" class="btn btn-outline-warning fw-bold" onclick="switchTab('managerLogin')" id="btn-managerLogin">Manager Login</button>
-            <button type="button" class="btn btn-outline-dark fw-bold" onclick="switchTab('managerRegister')" id="btn-managerRegister">Manager Register</button>
-        </div>
 
-        <!-- Forms Container -->
-        <div class="card shadow border-0">
-            <div class="card-body p-4">
-                
-                <!-- Guest Login Form -->
-                <div id="form-guestLogin" class="auth-form">
-                    <h4 class="mb-3">Guest Login</h4>
-                    <form method="POST">
-                        <input type="hidden" name="action" value="guest_login">
-                        <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control" required placeholder="guest@example.com">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Login as Guest</button>
-                    </form>
-                </div>
+<div class="auth-container">
 
-                <!-- Guest Register Form -->
-                <div id="form-guestRegister" class="auth-form" style="display: none;">
-                    <h4 class="mb-3">Guest Registration</h4>
-                    <form method="POST">
-                        <input type="hidden" name="action" value="guest_register">
-                        <div class="mb-3">
-                            <label class="form-label">Full Name</label>
-                            <input type="text" name="name" class="form-control" required placeholder="John Doe">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control" required placeholder="guest@example.com">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">Register as Guest</button>
-                    </form>
-                </div>
+    <!-- Action Switcher -->
+    <div class="auth-tabs">
+        <button type="button" class="tab-btn active guest-tab"
+                onclick="switchTab('guestLogin')" id="btn-guestLogin">
+            Guest Login
+        </button>
 
-                <!-- Manager Login Form -->
-                <div id="form-managerLogin" class="auth-form" style="display: none;">
-                    <h4 class="mb-3">Manager Login</h4>
-                    <form method="POST">
-                        <input type="hidden" name="action" value="manager_login">
-                        <div class="mb-3">
-                            <label class="form-label">Manager Email</label>
-                            <input type="email" name="email" class="form-control" required placeholder="manager@hostel.com">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
-                        </div>
-                        <button type="submit" class="btn btn-dark w-100">Login as Manager</button>
-                    </form>
-                </div>
+        <button type="button" class="tab-btn guest-tab"
+                onclick="switchTab('guestRegister')" id="btn-guestRegister">
+            Guest Register
+        </button>
 
-                <!-- Manager Register Form -->
-                <div id="form-managerRegister" class="auth-form" style="display: none;">
-                    <h4 class="mb-3">Manager Registration</h4>
-                    <form method="POST">
-                        <input type="hidden" name="action" value="manager_register">
-                        <div class="mb-3">
-                            <label class="form-label">Full Name</label>
-                            <input type="text" name="name" class="form-control" required placeholder="Jane Manager">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control" required placeholder="newmanager@hostel.com">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Manager Registration Code</label>
-                            <input type="password" name="registration_code" class="form-control" required placeholder="Enter registration code">
-                            <small class="text-muted">Only authorized managers should have this code.</small>
-                        </div>
-                        <button type="submit" class="btn btn-warning w-100 fw-bold">Register as Manager</button>
-                    </form>
-                </div>
+        <button type="button" class="tab-btn manager-tab"
+                onclick="switchTab('managerLogin')" id="btn-managerLogin">
+            Manager Login
+        </button>
 
+        <button type="button" class="tab-btn manager-tab"
+                onclick="switchTab('managerRegister')" id="btn-managerRegister">
+            Manager Register
+        </button>
+    </div>
+
+    <!-- Forms Card -->
+    <div class="auth-card">
+        <div class="auth-card-body">
+
+            <!-- Guest Login -->
+            <div id="form-guestLogin" class="auth-form">
+                <h2>Guest Login</h2>
+
+                <form method="POST">
+                    <input type="hidden" name="action" value="guest_login">
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" required
+                               placeholder="guest@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required
+                               placeholder="Enter your password">
+                    </div>
+
+                    <button type="submit" class="submit-btn guest-submit">
+                        Login as Guest
+                    </button>
+                </form>
             </div>
+
+            <!-- Guest Registration -->
+            <div id="form-guestRegister" class="auth-form" style="display:none;">
+                <h2>Guest Registration</h2>
+
+                <form method="POST">
+                    <input type="hidden" name="action" value="guest_register">
+
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="name" required
+                               placeholder="Enter your full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" required
+                               placeholder="guest@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required
+                               placeholder="Create a password">
+                    </div>
+
+                    <button type="submit" class="submit-btn register-submit">
+                        Register as Guest
+                    </button>
+                </form>
+            </div>
+
+            <!-- Manager Login -->
+            <div id="form-managerLogin" class="auth-form" style="display:none;">
+                <h2>Manager Login</h2>
+
+                <form method="POST">
+                    <input type="hidden" name="action" value="manager_login">
+
+                    <div class="form-group">
+                        <label>Manager Email</label>
+                        <input type="email" name="email" required
+                               placeholder="manager@hostel.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required
+                               placeholder="Enter your password">
+                    </div>
+
+                    <button type="submit" class="submit-btn manager-submit">
+                        Login as Manager
+                    </button>
+                </form>
+            </div>
+
+            <!-- Manager Registration -->
+            <div id="form-managerRegister" class="auth-form" style="display:none;">
+                <h2>Manager Registration</h2>
+
+                <form method="POST">
+                    <input type="hidden" name="action" value="manager_register">
+
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="name" required
+                               placeholder="Enter your full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" required
+                               placeholder="manager@hostel.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required
+                               placeholder="Create a password">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Manager Registration Code</label>
+                        <input type="password" name="registration_code" required
+                               placeholder="Enter registration code">
+
+                        <small class="form-hint">
+                            Only authorized managers should have this code.
+                        </small>
+                    </div>
+
+                    <button type="submit" class="submit-btn manager-register-submit">
+                        Register as Manager
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
 </div>
 
+<!-- JavaScript -->
 <script>
-    function switchTab(targetId) {
-        // Hide all forms
-        const forms = document.querySelectorAll('.auth-form');
-        forms.forEach(f => f.style.display = 'none');
+function switchTab(targetId) {
 
-        // Remove active class from all buttons
-        const buttons = document.querySelectorAll('.btn-group button');
-        buttons.forEach(b => {
-            b.classList.remove('active', 'btn-primary', 'btn-dark');
-            if(b.id.includes('manager')) {
-                b.classList.add('btn-outline-dark');
-            } else {
-                b.classList.add('btn-outline-primary');
-            }
-        });
+    // Hide all forms
+    const forms = document.querySelectorAll('.auth-form');
 
-        // Show target form
-        document.getElementById('form-' + targetId).style.display = 'block';
+    forms.forEach(form => {
+        form.style.display = 'none';
+    });
 
-        // Highlight active button
-        const activeBtn = document.getElementById('btn-' + targetId);
-        activeBtn.classList.add('active');
-        if(targetId.includes('manager')) {
-            activeBtn.classList.remove('btn-outline-dark');
-            activeBtn.classList.add('btn-dark');
-        } else {
-            activeBtn.classList.remove('btn-outline-primary');
-            activeBtn.classList.add('btn-primary');
-        }
-    }
+    // Reset all buttons
+    const buttons = document.querySelectorAll('.tab-btn');
+
+    buttons.forEach(button => {
+        button.classList.remove('active');
+    });
+
+    // Show selected form
+    document.getElementById('form-' + targetId).style.display = 'block';
+
+    // Activate selected button
+    const activeButton = document.getElementById('btn-' + targetId);
+
+    activeButton.classList.add('active');
+}
 </script>
 
-<!-- Custom CSS for the login and registration page -->
+<!-- Normal CSS -->
 <style>
-    .row.justify-content-center {
-        max-width: 760px;
-        margin: 2rem auto;
+
+* {
+    box-sizing: border-box;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 650px;
+    margin: 45px auto;
+    padding: 0 15px;
+}
+
+/* Tabs */
+.auth-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin-bottom: 25px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+}
+
+.tab-btn {
+    padding: 15px 8px;
+    border: 1px solid #d9dce3;
+    background: #ffffff;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.tab-btn:hover {
+    background: #f1f3f8;
+}
+
+.tab-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+.tab-btn.manager-tab.active {
+    background: #252b36;
+    border-color: #252b36;
+}
+
+/* Card */
+.auth-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.09);
+    border: 1px solid #eeeeee;
+    overflow: hidden;
+}
+
+.auth-card-body {
+    padding: 35px;
+    min-height: 380px;
+}
+
+/* Form */
+.auth-form h2 {
+    text-align: center;
+    font-size: 25px;
+    font-weight: 700;
+    color: #252b36;
+    margin: 0 0 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333333;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.form-group input {
+    display: block;
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid #d5d9e2;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+    background: #ffffff;
+    color: #252b36;
+    transition: 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+.form-group input::placeholder {
+    color: #a0a5b0;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 7px;
+    font-size: 12px;
+    color: #777777;
+}
+
+/* Submit Buttons */
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.guest-submit {
+    background: #2563eb;
+}
+
+.guest-submit:hover {
+    background: #1d4ed8;
+}
+
+.register-submit {
+    background: #16a34a;
+}
+
+.register-submit:hover {
+    background: #15803d;
+}
+
+.manager-submit {
+    background: #252b36;
+}
+
+.manager-submit:hover {
+    background: #111827;
+}
+
+.manager-register-submit {
+    background: #e5a000;
+    color: #222222;
+}
+
+.manager-register-submit:hover {
+    background: #ca8a04;
+}
+
+/* Mobile Responsive */
+@media (max-width: 576px) {
+
+    .auth-container {
+        margin: 25px auto;
     }
 
-    .btn-group {
-        border-radius: 10px;
-        overflow: hidden;
+    .auth-tabs {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    .btn-group .btn {
-        border-radius: 0;
-        padding: 0.75rem 0.5rem;
-        font-size: 0.95rem;
+    .tab-btn {
+        padding: 13px 5px;
+        font-size: 12px;
     }
 
-    .card {
-        border-radius: 12px;
+    .auth-card-body {
+        padding: 22px;
     }
 
-    .card-body {
-        min-height: 380px;
+    .auth-form h2 {
+        font-size: 22px;
     }
+}
 
-    .auth-form h4 {
-        text-align: center;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-    }
-
-    .form-control {
-        border-radius: 8px;
-        padding: 0.65rem 0.75rem;
-    }
-
-    .form-control:focus {
-        border-color: #6c757d;
-        box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
-    }
-
-    form .btn {
-        border-radius: 8px;
-        padding: 0.65rem;
-    }
-
-    @media (max-width: 576px) {
-        .row.justify-content-center {
-            margin: 1rem auto;
-        }
-
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .btn-group .btn {
-            font-size: 0.82rem;
-        }
-
-        .card-body {
-            padding: 1.25rem !important;
-        }
-    }
 </style>
 
 {% endblock %}
