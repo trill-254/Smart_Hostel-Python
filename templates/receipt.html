@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .receipt-wrap { max-width: 720px; margin: 30px auto; }
+  .receipt-card { border: 1px solid #037df7; border-radius: 14px; background: #f4f4f6; box-shadow: 0 10px 28px rgba(1, 1, 89, 0.969); }
+  .receipt-header { text-align: center; border-bottom: 2px dashed #054cf2; padding: 28px 24px 20px; }
+  .receipt-header h1 { font-size: 24px; margin: 8px 0 4px; }
+  .receipt-header-icon { color: #2563eb; font-size: 32px; }
+  .receipt-body { padding: 24px; }
+  .receipt-row { display: flex; justify-content: space-between; gap: 20px; padding: 8px 0; border-bottom: 1px solid #00050b; }
+  .receipt-row strong { color: #100200; }
+  .receipt-actions { display: flex; gap: 10px; padding: 20px 24px 24px; }
+  .receipt-action-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 10px 16px; border-radius: 8px; border: 1px solid transparent; font: 600 14px Arial, sans-serif; text-decoration: none; cursor: pointer; }
+  .receipt-action-btn i { margin-right: 7px; font-size: 16px; }
+  .receipt-action-primary { color: #fff; background: #2563eb; border-color: #2563eb; }
+  .receipt-action-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+  .receipt-action-outline { color: #2563eb; background: transparent; border-color: #2563eb; }
+  .receipt-action-outline:hover { background: #eff6ff; }
+  .receipt-action-secondary { color: #4b5563; background: #fff; border-color: #9ca3af; margin-left: auto; }
+  .receipt-action-secondary:hover { background: #f3f4f6; }
+  .receipt-muted { color: #6b7280; }
+  .receipt-bold { font-weight: 700; }
+  .receipt-paid { color: #318e07; }
+  @media (max-width: 576px) { .receipt-row { display: block; } .receipt-row strong { display: block; } .receipt-actions { flex-direction: column; } .receipt-action-secondary { margin-left: 0; } }
+  @media print { .navbar, .receipt-actions, .alert { display: none !important; } .container { max-width: 100%; } }
+</style>
+
+<div class="receipt-wrap">
+  <div class="receipt-card">
+    <div class="receipt-header">
+      <i class="bi bi-building receipt-header-icon"></i>
+      <h1>HOSTEL ACCOMMODATION RECEIPT</h1>
+      <div class="receipt-muted">Receipt / Booking ID: #{{ booking.id }}</div>
+    </div>
+
+    <div class="receipt-body">
+      <div class="receipt-row"><strong>Issued Date</strong><span>{{ generated_at.strftime('%Y-%m-%d %H:%M UTC') }}</span></div>
+      <div class="receipt-row"><strong>Student Name</strong><span>{{ booking.guest.name }}</span></div>
+      <div class="receipt-row"><strong>Student Email</strong><span>{{ booking.guest.email }}</span></div>
+      <div class="receipt-row"><strong>Room Number</strong><span>{{ booking.room.room_number }}</span></div>
+      <div class="receipt-row"><strong>Room Type</strong><span>{{ booking.room.room_type }}</span></div>
+      <div class="receipt-row"><strong>Check-In</strong><span>{{ booking.check_in }}</span></div>
+      <div class="receipt-row"><strong>Check-Out</strong><span>{{ booking.check_out }}</span></div>
+      <div class="receipt-row"><strong>Amount</strong><span class="receipt-bold">Ksh {{ "%.2f"|format(booking.room.price_per_semester) }}</span></div>
+      <div class="receipt-row"><strong>Booking Status</strong><span>{{ booking.status }}</span></div>
+      <div class="receipt-row"><strong>Payment Status</strong><span class="receipt-bold receipt-paid">{{ booking.payment_status }}</span></div>
+      <div class="receipt-row"><strong>Payment Method</strong><span>{{ booking.payment_method or 'Not recorded' }}</span></div>
+      <div class="receipt-row"><strong>Payment Reference</strong><span class="receipt-bold">{{ booking.payment_reference or 'Not generated' }}</span></div>
+    </div>
+
+    <div class="receipt-actions">
+      <button type="button" class="receipt-action-btn receipt-action-primary" onclick="window.print()"><i class="bi bi-printer"></i>Print</button>
+      <a href="{{ url_for('booking_receipt', booking_id=booking.id, download='txt') }}" class="receipt-action-btn receipt-action-outline"><i class="bi bi-download"></i>Download TXT</a>
+      <a href="{{ url_for('guest_dashboard') }}" class="receipt-action-btn receipt-action-secondary"><i class="bi bi-arrow-left"></i>Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

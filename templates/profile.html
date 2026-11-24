@@ -1,10 +1,10 @@
-
 {% extends "base.html" %}
 
 {% block content %}
 
 <style>
     .profile-page {
+        --profile-input-bg: #f9f4f5;
         width: 100%;
         max-width: 620px;
         margin: 45px auto;
@@ -12,7 +12,7 @@
     }
 
     .profile-card {
-        background: #ffffff;
+        background: #dfcdcdc9;
         border-radius: 12px;
         box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
         overflow: hidden;
@@ -34,14 +34,14 @@
         margin: 0;
         font-size: 25px;
         font-weight: 700;
-        color: #212529;
+        color: #000306;
     }
 
     .role-badge {
         display: inline-block;
         padding: 8px 14px;
         border-radius: 20px;
-        color: #ffffff;
+        color: #f9f6f6;
         font-size: 12px;
         font-weight: 700;
         text-transform: uppercase;
@@ -49,11 +49,11 @@
     }
 
     .role-manager {
-        background: #dc3545;
+        background: #003584;
     }
 
     .role-guest {
-        background: #0d6efd;
+        background: #013988;
     }
 
     .profile-form-group {
@@ -64,31 +64,38 @@
         display: block;
         margin-bottom: 8px;
         font-weight: 700;
-        color: #343a40;
+        color: #000306;
     }
 
     .profile-label small {
-        color: #6c757d;
+        color: #3c4545f8;
         font-weight: 400;
     }
-
     .profile-input {
-        display: block;
-        width: 100%;
-        padding: 12px 14px;
-        border: 1px solid #ced4da;
-        border-radius: 7px;
-        background: #ffffff;
-        color: #212529;
-        font-size: 15px;
-        box-sizing: border-box;
-        transition: border-color 0.2s, box-shadow 0.2s;
+    display: block;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #ced4da;
+    border-radius: 7px;
+    background: var(--profile-input-bg);
+    color: #040100;
+    font-size: 15px;
+    box-sizing: border-box;
     }
 
     .profile-input:focus {
         outline: none;
         border-color: #86b7fe;
         box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    }
+
+    .profile-input:-webkit-autofill,
+    .profile-input:-webkit-autofill:hover,
+    .profile-input:-webkit-autofill:focus,
+    .profile-input:-webkit-autofill:active {
+        -webkit-text-fill-color: #040100;
+        -webkit-box-shadow: 0 0 0 1000px #f4e8ea inset;
+        box-shadow: 0 0 0 1000px #faf8f9 inset;
     }
 
     .save-profile-btn {

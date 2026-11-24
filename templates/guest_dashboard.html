@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block content %}
 
@@ -14,10 +13,17 @@
                 <p>Explore available rooms and choose your preferred accommodation.</p>
             </div>
 
-            <!-- Available Rooms -->
+            <!-- Available Rooms Only (Fully Booked Rooms Excluded) -->
+            {% set available_rooms = [] %}
+            {% for room in rooms %}
+                {% if room.available_beds() > 0 %}
+                    {% set _ = available_rooms.append(room) %}
+                {% endif %}
+            {% endfor %}
+
             <div class="rooms-grid">
 
-                {% for room in rooms %}
+                {% for room in available_rooms %}
 
                 <div class="room-card">
 
@@ -26,13 +32,8 @@
                              alt="Room {{ room.room_number }}"
                              class="room-image">
 
-                        <span class="room-availability
-                            {% if room.available_beds() > 0 %}available{% else %}unavailable{% endif %}">
-                            {% if room.available_beds() > 0 %}
-                                Available
-                            {% else %}
-                                Fully Booked
-                            {% endif %}
+                        <span class="room-availability available">
+                            Available
                         </span>
                     </div>
 
@@ -56,23 +57,12 @@
 
                         <div class="room-card-action">
 
-                            {% if room.available_beds() > 0 %}
-
-                                <button type="button"
-                                        class="book-btn"
-                                        onclick="selectRoom('{{ room.id }}', '{{ room.room_number }}', '{{ room.room_type }}')">
-                                    <i class="bi bi-calendar-check"></i>
-                                    Book Now
-                                </button>
-
-                            {% else %}
-
-                                <button type="button" class="fully-booked-btn" disabled>
-                                    <i class="bi bi-x-circle"></i>
-                                    Fully Booked
-                                </button>
-
-                            {% endif %}
+                            <button type="button"
+                                    class="book-btn"
+                                    onclick="selectRoom('{{ room.id }}', '{{ room.room_number }}', '{{ room.room_type }}')">
+                                <i class="bi bi-calendar-check"></i>
+                                Book Now
+                            </button>
 
                         </div>
 
@@ -87,7 +77,7 @@
                         <i class="bi bi-house"></i>
                     </div>
                     <h3>No Rooms Available</h3>
-                    <p>There are currently no rooms listed in the catalog.</p>
+                    <p>There are currently no available rooms in the catalog.</p>
                 </div>
 
                 {% endfor %}
@@ -103,7 +93,7 @@
                         <i class="bi bi-calendar-plus"></i>
                         Book Selected Room
                     </h3>
-                    <p>Complete the details below to submit your booking request.</p>
+                    <p>Complete the details below to submit your booking request and proceed to payment.</p>
                 </div>
 
                 <div class="booking-form-body">
@@ -137,8 +127,8 @@
                         </div>
 
                         <button type="submit" class="submit-booking-btn">
-                            <i class="bi bi-send"></i>
-                            Submit Booking Request
+                            <i class="bi bi-credit-card"></i>
+                            Submit Booking Request & Proceed to Payment
                         </button>
 
                     </form>
@@ -153,13 +143,52 @@
         <!-- RIGHT COLUMN -->
         <div class="sidebar-column">
 
+            <!-- Checkout Reminders -->
+            <div class="section-heading">
+                <h2>
+                    <i class="bi bi-alarm"></i>
+                    Checkout Reminders
+                </h2>
+                <p>Alerts when your check-out date is approaching.</p>
+            </div>
+
+            <div class="sidebar-card">
+                {% if checkout_reminders %}
+                    {% for item in checkout_reminders %}
+                        {% set b = item.booking %}
+                        {% set d = item.days_left %}
+                        <div class="my-booking-item reminder-item">
+                            <h3>Room {{ b.room.room_number }} <span>({{ b.room.room_type }})</span></h3>
+                            <p class="stay-dates">
+                                <strong>Check-Out Date:</strong> {{ b.check_out }}
+                            </p>
+                            {% if d < 0 %}
+                                <span class="status-badge status-rejected">Past check-out by {{ d|abs }} day(s)</span>
+                            {% elif d == 0 %}
+                                <span class="status-badge status-pending">Check-out is TODAY</span>
+                            {% else %}
+                                <span class="status-badge status-pending">Check-out in {{ d }} day(s)</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <p>No upcoming checkouts within 7 days.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+
             <!-- My Bookings -->
             <div class="section-heading">
                 <h2>
                     <i class="bi bi-calendar2-check"></i>
                     My Bookings
                 </h2>
-                <p>View your accommodation booking history.</p>
+                <p>View your accommodation booking history and payment status.</p>
             </div>
 
             <div class="sidebar-card">
@@ -201,6 +230,14 @@
 
                             </div>
 
+                            {% if b.payment_status != 'Paid' and b.status != 'Rejected' %}
+                            <div class="booking-actions">
+                                <a href="{{ url_for('payment_page', booking_id=b.id) }}" class="action-btn-pay">
+                                    <i class="bi bi-credit-card"></i> Go to Payment
+                                </a>
+                            </div>
+                            {% endif %}
+
                         </div>
 
                         {% endfor %}
@@ -227,7 +264,7 @@
                     <i class="bi bi-bell"></i>
                     Notifications
                 </h2>
-                <p>Stay updated on your booking activities.</p>
+                <p>Stay updated on your booking activities and checkout alerts.</p>
             </div>
 
             <div class="sidebar-card notifications-card">
@@ -265,6 +302,63 @@
                             <i class="bi bi-bell-slash"></i>
                         </div>
                         <p>No new notifications.</p>
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- Receipt (Placed Below Notifications) -->
+            <div class="section-heading receipt-heading">
+                <h2>
+                    <i class="bi bi-receipt"></i>
+                    Receipts
+                </h2>
+                <p>Download or view receipts for your bookings.</p>
+            </div>
+
+            <div class="sidebar-card receipt-card-box">
+
+                {% if bookings %}
+
+                    <div class="my-bookings-list">
+
+                        {% for b in bookings %}
+
+                        <div class="my-booking-item">
+
+                            <h3>
+                                Booking #{{ b.id }} — Room {{ b.room.room_number }}
+                            </h3>
+
+                            <p class="stay-dates">
+                                <strong>Amount:</strong> Ksh {{ "%.2f"|format(b.room.price_per_semester) }}
+                                &bull; <strong>{{ b.payment_status }}</strong>
+                            </p>
+
+                            <div class="booking-actions">
+                                <a href="{{ url_for('booking_receipt', booking_id=b.id) }}" class="action-btn-receipt">
+                                    <i class="bi bi-eye"></i> View Receipt
+                                </a>
+                                <a href="{{ url_for('booking_receipt', booking_id=b.id, download='txt') }}" class="action-btn-download">
+                                    <i class="bi bi-download"></i> Download Receipt
+                                </a>
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% else %}
+
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                        <p>No receipts available yet.</p>
                     </div>
 
                 {% endif %}
@@ -432,11 +526,6 @@ checkIn.addEventListener('change', function() {
     color: #166534;
 }
 
-.unavailable {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
 /* Room Details */
 .room-card-body {
     padding: 17px;
@@ -488,8 +577,7 @@ checkIn.addEventListener('change', function() {
     margin-top: auto;
 }
 
-.book-btn,
-.fully-booked-btn {
+.book-btn {
     width: 100%;
     padding: 11px;
     border-radius: 7px;
@@ -497,29 +585,18 @@ checkIn.addEventListener('change', function() {
     font-weight: 700;
     cursor: pointer;
     transition: 0.2s;
-}
-
-.book-btn {
     background: white;
     border: 1px solid #2563eb;
     color: #2563eb;
 }
 
-.book-btn i,
-.fully-booked-btn i {
+.book-btn i {
     margin-right: 5px;
 }
 
 .book-btn:hover {
     background: #2563eb;
     color: white;
-}
-
-.fully-booked-btn {
-    background: #e5e7eb;
-    border: none;
-    color: #777;
-    cursor: not-allowed;
 }
 
 /* Booking Form */
@@ -635,6 +712,11 @@ checkIn.addEventListener('change', function() {
     border-bottom: none;
 }
 
+.reminder-item {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+}
+
 .my-booking-item h3 {
     font-size: 14px;
     font-weight: 700;
@@ -656,6 +738,61 @@ checkIn.addEventListener('change', function() {
     display: flex;
     flex-wrap: wrap;
     gap: 7px;
+}
+
+/* Booking & Receipt Buttons */
+.booking-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.action-btn-pay,
+.action-btn-receipt,
+.action-btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.action-btn-pay {
+    background: #2563eb;
+    color: #ffffff;
+    border: 1px solid #2563eb;
+}
+
+.action-btn-pay:hover {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.action-btn-receipt {
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.action-btn-receipt:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.action-btn-download {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.action-btn-download:hover {
+    background: #dbeafe;
+    color: #1d4ed8;
 }
 
 /* Status Badges */
@@ -686,8 +823,9 @@ checkIn.addEventListener('change', function() {
     color: #374151;
 }
 
-/* Notifications */
-.notifications-heading {
+/* Notifications & Receipts */
+.notifications-heading,
+.receipt-heading {
     margin-top: 10px;
 }
 
@@ -779,15 +917,7 @@ checkIn.addEventListener('change', function() {
     }
 
     .sidebar-column {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        align-items: start;
-    }
-
-    .sidebar-column .notifications-heading {
-        grid-column: 2;
-        grid-row: 1;
+        display: block;
     }
 
     .sidebar-card {
@@ -809,10 +939,6 @@ checkIn.addEventListener('change', function() {
 
     .sidebar-column {
         display: block;
-    }
-
-    .sidebar-column .notifications-heading {
-        margin-top: 10px;
     }
 
     .section-heading h2 {

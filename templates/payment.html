@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .payment-wrap { max-width: 620px; margin: 40px auto; }
+  .payment-card { border: 0; border-radius: 16px; box-shadow: 0 12px 30px rgba(15, 23, 42, .12); }
+  .payment-card .card-header { border: 0; border-radius: 16px 16px 0 0; background: #e88104; color: #fff; padding: 20px 24px; }
+  .payment-card .card-body { padding: 24px; }
+  .payment-summary { background: #f2eff2; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+
+  .payment-actions { display: flex; flex-direction: column; gap: 10px; }
+  .payment-action-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; padding: 10px 16px; border-radius: 8px; font: 600 15px Arial, sans-serif; text-decoration: none; cursor: pointer; box-sizing: border-box; }
+  .payment-submit-btn { color: #f9f7f7; background: #0d05f6; border: 1px solid #2563eb; }
+  .payment-submit-btn:hover { background: #0443f2; border-color: #0444f5; }
+  .payment-cancel-btn { color: #076cf0; background: #0b000021; border: 1px solid #9ca3af; }
+  .payment-cancel-btn:hover { background: #f3f4f6; border-color: #6b7280; }
+</style>
+
+<div class="payment-wrap">
+  <div class="card payment-card">
+    <div class="card-header">
+      <h2 class="h4 mb-0"><i class="bi bi-credit-card me-2"></i>Complete Payment</h2>
+    </div>
+    <div class="card-body">
+      <div class="payment-summary">
+        <div><strong>Room:</strong> {{ booking.room.room_number }} — {{ booking.room.room_type }}</div>
+        <div><strong>Amount:</strong> Ksh {{ "%.2f"|format(booking.room.price_per_semester) }}</div>
+        <div><strong>Booking:</strong> #{{ booking.id }}</div>
+      </div>
+
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label fw-bold" for="payment_method">Payment Method</label>
+          <select class="form-select" id="payment_method" name="payment_method" required>
+            <option value="M-Pesa">M-Pesa</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cash">Cash</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-bold">Payment Reference</label>
+          <input class="form-control" value="Generated automatically after payment" disabled>
+          <div class="form-text">A unique reference code will be created for this booking automatically.</div>
+        </div>
+
+        <div class="payment-actions">
+          <button type="submit" class="payment-action-btn payment-submit-btn"><i class="bi bi-credit-card"></i>Record Payment</button>
+          <a href="{{ url_for('guest_dashboard') }}" class="payment-action-btn payment-cancel-btn">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
