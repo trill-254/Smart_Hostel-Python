@@ -83,8 +83,6 @@
                 {% endfor %}
 
             </div>
-
-
             <!-- Booking Form -->
             <div class="booking-form-card" id="bookingFormCard">
 
@@ -230,11 +228,34 @@
 
                             </div>
 
-                            {% if b.payment_status != 'Paid' and b.status != 'Rejected' %}
+                            {% if b.payment_status != 'Paid'
+                                  and b.status not in ['Rejected', 'Cancelled']
+                                  and b.refund_status not in ['Refund Requested', 'Refunded', 'Refund Rejected'] %}
                             <div class="booking-actions">
                                 <a href="{{ url_for('payment_page', booking_id=b.id) }}" class="action-btn-pay">
                                     <i class="bi bi-credit-card"></i> Go to Payment
                                 </a>
+                            </div>
+                            {% endif %}
+
+                            {% if b.status != 'Cancelled' and b.status not in ['Completed', 'Rejected'] %}
+                            <div class="booking-actions">
+                                <form action="{{ url_for('cancel_booking', booking_id=b.id) }}" method="POST"
+                                      onsubmit="return confirm('Cancel this booking and submit a refund request if payment was made?')">
+                                    <input type="hidden" name="reason" value="Changed my mind about coming">
+                                    <button type="submit" class="action-btn-cancel">
+                                        <i class="bi bi-x-circle"></i> Cancel Booking
+                                    </button>
+                                </form>
+                            </div>
+                            {% elif b.status == 'Cancelled' %}
+                            <div class="booking-actions">
+                                <span class="status-badge status-rejected">Booking Cancelled</span>
+                                {% if b.refund_status != 'Not Applicable' %}
+                                <span class="status-badge {% if b.refund_status == 'Refunded' %}status-confirmed{% else %}status-pending{% endif %}">
+                                    Refund: {{ b.refund_status }}
+                                </span>
+                                {% endif %}
                             </div>
                             {% endif %}
 
@@ -363,6 +384,29 @@
 
                 {% endif %}
 
+            </div>
+
+
+            <!-- Contact Manager -->
+            <div class="section-heading">
+                <h2><i class="bi bi-envelope-at"></i> Contact</h2>
+                <p>Send a question or inquiry about your booking.</p>
+            </div>
+
+            <div class="sidebar-card contact-card">
+                <form action="{{ url_for('contact_manager') }}" method="POST">
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" name="subject" required placeholder="What can we help you with?">
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea name="message" rows="2" required placeholder="Type your message to the hostel manager..."></textarea>
+                    </div>
+                    <button type="submit" class="action-btn-contact">
+                        <i class="bi bi-send"></i> Send Message
+                    </button>
+                </form>
             </div>
 
         </div>
@@ -645,7 +689,8 @@ checkIn.addEventListener('change', function() {
     color: #333;
 }
 
-.form-group input {
+.form-group input,
+.form-group textarea {
     width: 100%;
     padding: 12px;
     border: 1px solid #d1d5db;
@@ -654,9 +699,15 @@ checkIn.addEventListener('change', function() {
     font-size: 13px;
     color: #333;
     background: white;
+    box-sizing: border-box;
 }
 
-.form-group input:focus {
+.form-group textarea {
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
 }
@@ -750,7 +801,9 @@ checkIn.addEventListener('change', function() {
 
 .action-btn-pay,
 .action-btn-receipt,
-.action-btn-download {
+.action-btn-download,
+.action-btn-cancel,
+.action-btn-contact {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -793,6 +846,28 @@ checkIn.addEventListener('change', function() {
 .action-btn-download:hover {
     background: #dbeafe;
     color: #1d4ed8;
+}
+
+.action-btn-cancel {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #f87171;
+}
+
+.action-btn-cancel:hover {
+    background: #fda4a4;
+    color: #991b1b;
+}
+
+.action-btn-contact {
+    background: #e0f2fe;
+    color: #0d9488;
+    border: 1px solid #b2ebf2;
+}
+
+.action-btn-contact:hover {
+    background: #b2ebf2;
+    color: #0d7e7a;
 }
 
 /* Status Badges */

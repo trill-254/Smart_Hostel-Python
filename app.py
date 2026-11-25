@@ -52,7 +52,7 @@ def sync_checkout_reminders(user_id, bookings):
     created_any = False
 
     for b in bookings:
-        if b.status in ['Completed', 'Rejected']:
+        if b.status in ['Completed', 'Rejected', 'Cancelled']:
             continue
         checkout_dt = parse_iso_date(b.check_out)
         if not checkout_dt:
@@ -122,6 +122,9 @@ class Booking(db.Model):
     payment_status = db.Column(db.String(20), default='Unpaid')
     payment_method = db.Column(db.String(30), nullable=True)
     payment_reference = db.Column(db.String(100), nullable=True)
+    cancellation_status = db.Column(db.String(30), default='None')
+    cancellation_reason = db.Column(db.String(255), nullable=True)
+    refund_status = db.Column(db.String(30), default='Not Applicable')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
@@ -138,6 +141,18 @@ class Notification(db.Model):
     message = db.Column(db.String(255), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ContactMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(150), nullable=False)
+    message = db.Column(db.String(1000), nullable=False)
+    status = db.Column(db.String(20), default='Unread')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', backref='contact_messages', lazy=True)
 
 
 # --- INITIALIZE DB & SEED DATA ---
@@ -160,6 +175,12 @@ def init_db():
             db.session.execute(db.text("ALTER TABLE booking ADD COLUMN payment_method VARCHAR(30)"))
         if 'payment_reference' not in column_names:
             db.session.execute(db.text("ALTER TABLE booking ADD COLUMN payment_reference VARCHAR(100)"))
+        if 'cancellation_status' not in column_names:
+            db.session.execute(db.text("ALTER TABLE booking ADD COLUMN cancellation_status VARCHAR(30) DEFAULT 'None'"))
+        if 'cancellation_reason' not in column_names:
+            db.session.execute(db.text("ALTER TABLE booking ADD COLUMN cancellation_reason VARCHAR(255)"))
+        if 'refund_status' not in column_names:
+            db.session.execute(db.text("ALTER TABLE booking ADD COLUMN refund_status VARCHAR(30) DEFAULT 'Not Applicable'"))
         db.session.commit()
 
 
@@ -283,7 +304,7 @@ def guest_dashboard():
 
     checkout_reminders = []
     for b in my_bookings:
-        if b.status in ['Completed', 'Rejected']:
+        if b.status in ['Completed', 'Rejected', 'Cancelled']:
             continue
         days_left = b.days_until_checkout
         if days_left is not None and days_left <= 7:
@@ -347,6 +368,74 @@ def book_room():
     return redirect(url_for('guest_dashboard'))
 
 
+@app.route('/booking/<int:booking_id>/cancel', methods=['POST'])
+@login_required
+def cancel_booking(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    if booking.user_id != session['user_id']:
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('guest_dashboard'))
+
+    if booking.status in ['Completed', 'Rejected', 'Cancelled']:
+        flash('This booking is already closed or cancelled.', 'warning')
+        return redirect(url_for('guest_dashboard'))
+
+    reason = request.form.get('reason', '').strip() or 'Changed my mind about coming'
+    booking.status = 'Cancelled'
+    booking.cancellation_status = 'Cancelled by Guest'
+    booking.cancellation_reason = reason
+
+    if booking.payment_status == 'Paid':
+        booking.refund_status = 'Refund Requested'
+        db.session.add(
+            Notification(
+                user_id=booking.user_id,
+                message=(
+                    f"Booking #{booking.id} (Room {booking.room.room_number}) cancelled. "
+                    f"A refund request for Ksh {booking.room.price_per_semester:,.2f} has been sent to the manager."
+                ),
+            )
+        )
+        flash('Booking cancelled and refund request submitted to the manager.', 'info')
+    else:
+        booking.refund_status = 'Not Applicable'
+        db.session.add(
+            Notification(
+                user_id=booking.user_id,
+                message=f"Booking #{booking.id} (Room {booking.room.room_number}) has been cancelled.",
+            )
+        )
+        flash('Booking cancelled successfully.', 'info')
+
+    db.session.commit()
+    return redirect(url_for('guest_dashboard'))
+
+
+@app.route('/contact/manager', methods=['POST'])
+@login_required
+def contact_manager():
+    subject = request.form.get('subject', '').strip()
+    message_text = request.form.get('message', '').strip()
+
+    if not subject or not message_text:
+        flash('Please enter both a subject and a message.', 'danger')
+        return redirect(url_for('guest_dashboard'))
+
+    user = User.query.get_or_404(session['user_id'])
+    contact_msg = ContactMessage(
+        user_id=user.id,
+        name=user.name,
+        email=user.email,
+        subject=subject,
+        message=message_text,
+        status='Unread',
+    )
+    db.session.add(contact_msg)
+    db.session.commit()
+    flash('Your message has been sent to the manager.', 'success')
+    return redirect(url_for('guest_dashboard'))
+
+
 @app.route('/payment/<int:booking_id>', methods=['GET', 'POST'])
 @login_required
 def payment_page(booking_id):
@@ -358,7 +447,6 @@ def payment_page(booking_id):
     if request.method == 'POST':
         payment_method = request.form.get('payment_method', 'M-Pesa')
 
-        # Generate a unique payment reference if not already set
         if not booking.payment_reference:
             booking.payment_reference = f"REF{booking.id}-{uuid.uuid4().hex[:6].upper()}"
 
@@ -405,6 +493,7 @@ def booking_receipt(booking_id):
             f"Amount               : Ksh {booking.room.price_per_semester:,.2f}",
             f"Booking Status       : {booking.status}",
             f"Payment Status       : {booking.payment_status}",
+            f"Refund Status        : {booking.refund_status}",
             f"Payment Reference    : {booking.payment_reference}",
             "==========================================",
         ]
@@ -426,16 +515,23 @@ def booking_receipt(booking_id):
 def manager_dashboard():
     rooms = Room.query.all()
     all_bookings = Booking.query.order_by(Booking.created_at.desc()).all()
+    contact_messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
 
     total_revenue = sum(
         [
             b.room.price_per_semester
             for b in all_bookings
-            if b.status in ['Confirmed', 'Completed'] and b.room is not None
+            if b.status in ['Confirmed', 'Completed']
+            and b.payment_status == 'Paid'
+            and b.room is not None
         ]
     )
     return render_template(
-        'manager_dashboard.html', rooms=rooms, bookings=all_bookings, revenue=total_revenue
+        'manager_dashboard.html',
+        rooms=rooms,
+        bookings=all_bookings,
+        revenue=total_revenue,
+        contact_messages=contact_messages,
     )
 
 
@@ -500,7 +596,10 @@ def update_booking_status(booking_id, action):
             flash('Cannot confirm: Room is at full capacity.', 'danger')
     elif action == 'reject':
         booking.status = 'Rejected'
-        booking.payment_status = 'Unpaid'
+        if booking.payment_status == 'Paid':
+            booking.refund_status = 'Refund Requested'
+        else:
+            booking.payment_status = 'Unpaid'
         notif = Notification(
             user_id=booking.user_id,
             message=f"Your booking for Room {room.room_number} was rejected.",
@@ -511,6 +610,49 @@ def update_booking_status(booking_id, action):
         booking.status = 'Completed'
         flash('Guest checked out successfully.', 'info')
     db.session.commit()
+    return redirect(url_for('manager_dashboard'))
+
+
+@app.route('/manager/refund/<int:booking_id>/<action>', methods=['POST'])
+@manager_required
+def process_refund(booking_id, action):
+    booking = Booking.query.get_or_404(booking_id)
+    if action == 'approve':
+        booking.refund_status = 'Refunded'
+        booking.payment_status = 'Refunded'
+        db.session.add(
+            Notification(
+                user_id=booking.user_id,
+                message=(
+                    f"Your refund of Ksh {booking.room.price_per_semester:,.2f} for "
+                    f"Booking #{booking.id} (Room {booking.room.room_number}) has been approved."
+                ),
+            )
+        )
+        flash(f'Refund approved for Booking #{booking.id}.', 'success')
+    elif action == 'reject':
+        booking.refund_status = 'Refund Rejected'
+        db.session.add(
+            Notification(
+                user_id=booking.user_id,
+                message=(
+                    f"Your refund request for Booking #{booking.id} "
+                    f"(Room {booking.room.room_number}) was rejected by the manager."
+                ),
+            )
+        )
+        flash(f'Refund request rejected for Booking #{booking.id}.', 'info')
+    db.session.commit()
+    return redirect(url_for('manager_dashboard'))
+
+
+@app.route('/manager/contact/<int:message_id>/read', methods=['POST'])
+@manager_required
+def mark_contact_read(message_id):
+    msg = ContactMessage.query.get_or_404(message_id)
+    msg.status = 'Read'
+    db.session.commit()
+    flash('Message marked as read.', 'info')
     return redirect(url_for('manager_dashboard'))
 
 
@@ -526,9 +668,9 @@ def edit_booking(booking_id):
         booking.check_in = new_check_in
     if new_check_out:
         booking.check_out = new_check_out
-    if new_status in ['Pending Approval', 'Confirmed', 'Rejected', 'Completed']:
+    if new_status in ['Pending Approval', 'Confirmed', 'Rejected', 'Cancelled', 'Completed']:
         booking.status = new_status
-    if new_payment_status in ['Paid', 'Unpaid']:
+    if new_payment_status in ['Paid', 'Unpaid', 'Refunded']:
         booking.payment_status = new_payment_status
     db.session.commit()
     flash('Booking updated successfully.', 'success')
@@ -615,6 +757,7 @@ def export_csv_report():
             'Check-Out',
             'Status',
             'Payment Status',
+            'Refund Status',
             'Date Requested',
         ]
     )
@@ -630,6 +773,7 @@ def export_csv_report():
                 b.check_out,
                 b.status,
                 b.payment_status,
+                b.refund_status,
                 b.created_at.strftime('%Y-%m-%d %H:%M'),
             ]
         )

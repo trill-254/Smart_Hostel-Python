@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block content %}
 
@@ -388,6 +387,62 @@
 
                 </div>
 
+            </div>
+
+            <!-- Refund Requests -->
+            <div class="panel">
+                <div class="panel-header secondary-header">
+                    <h3><i class="bi bi-arrow-counterclockwise"></i> Refund Requests</h3>
+                </div>
+                <div class="panel-body">
+                    {% set ns = namespace(found=false) %}
+                    {% for b in bookings if b.refund_status == 'Refund Requested' %}
+                        {% set ns.found = true %}
+                        <div class="booking-item" style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:10px">
+                            <strong>Booking #{{ b.id }} — {{ b.guest.name }}</strong>
+                            <p>Room {{ b.room.room_number }} | Amount: Ksh {{ "%.2f"|format(b.room.price_per_semester) }}</p>
+                            <p>Reason: {{ b.cancellation_reason or 'Changed their mind' }}</p>
+                            <div class="booking-actions">
+                                <form action="{{ url_for('process_refund', booking_id=b.id, action='approve') }}" method="POST">
+                                    <button class="small-btn confirm-btn" type="submit"><i class="bi bi-check-circle"></i> Approve Refund</button>
+                                </form>
+                                <form action="{{ url_for('process_refund', booking_id=b.id, action='reject') }}" method="POST">
+                                    <button class="small-btn reject-btn" type="submit"><i class="bi bi-x-circle"></i> Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    {% if not ns.found %}
+                        <p>No pending refund requests.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Messages from Guests -->
+            <div class="panel">
+                <div class="panel-header blue-header">
+                    <h3><i class="bi bi-envelope"></i> Guest Messages</h3>
+                </div>
+                <div class="panel-body">
+                    {% if contact_messages %}
+                        {% for m in contact_messages %}
+                        <div class="booking-item" style="border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-bottom:10px">
+                            <strong>{{ m.subject }}</strong>
+                            <p><b>From:</b> {{ m.name }} ({{ m.email }})</p>
+                            <p>{{ m.message }}</p>
+                            {% if m.status == 'Unread' %}
+                            <form action="{{ url_for('mark_contact_read', message_id=m.id) }}" method="POST">
+                                <button class="small-btn confirm-btn" type="submit"><i class="bi bi-check2"></i> Mark as Read</button>
+                            </form>
+                            {% else %}
+                            <span class="status-badge status-confirmed">Read</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No guest messages yet.</p>
+                    {% endif %}
+                </div>
             </div>
 
         </div>
